@@ -7,9 +7,11 @@ const url = async function (req, res) {
         let {longUrl,shortUrl,urlCode} = data
         if(Object.keys(data).length==0) return res.status(400).send({status:false,msg:"Request Body cant be empty"})
         // if(Object.keys(data).includes()) return res.status(400).send({status:false,msg:"Request body can only contain 'longUrl','shortUrl','urlCode'"})
-        if(!Object.keys(data).includes('longUrl')) return res.status(400).send({status:false,msg:"longUrl should be there in request body"})
-        if(Object.keys(data).includes('shortUrl')) return res.status(400).send({status:false,msg:"shortUrl should not be there in request body"})
-        if(Object.keys(data).includes('urlCode')) return res.status(400).send({status:false,msg:"urlCode should not be there in request body"})
+        if(!Object.keys(data).includes('longUrl')) return res.status(400).send({status:false,msg:"'longUrl' should be there in request body"})
+        if(Object.keys(data).length>1) return res.status(400).send({status:false,msg:"Enter 'longUrl' only in request body"})
+        
+        // if(Object.keys(data).includes('shortUrl')) return res.status(400).send({status:false,msg:"shortUrl should not be there in request body"})
+        // if(Object.keys(data).includes('urlCode')) return res.status(400).send({status:false,msg:"urlCode should not be there in request body"})
         
         let LinkFormat = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%.\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%\+.~#?&\/=]*)$/
         if (!LinkFormat.test(longUrl)) return res.status(400).send({ status: false, msg: "Please Enter Valid Url" })
