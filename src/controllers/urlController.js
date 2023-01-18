@@ -30,7 +30,7 @@ const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
 const url = async function (req, res) {
     try {
         let data = req.body
-        let { longUrl, shortUrl, urlCode } = data
+        let { longUrl } = data
         if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "Request Body cant be empty" })
 
         if (!Object.keys(data).includes('longUrl')) return res.status(400).send({ status: false, msg: "'longUrl' should be there in request body" })
@@ -45,6 +45,7 @@ const url = async function (req, res) {
         let baseUrl = `${req.protocol}://${req.get('host')}/`
         data.urlCode = shortUrlCode
         data.shortUrl = baseUrl + shortUrlCode
+        let { shortUrl, urlCode } = data
         let createData = await urlModel.create(data)
         return res.status(201).send({ status: true, data: { longUrl, shortUrl, urlCode } })
     } catch (error) {
