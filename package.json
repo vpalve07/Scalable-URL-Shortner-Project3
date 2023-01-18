@@ -14,6 +14,7 @@
     "nodemon": "^2.0.20",
     "redis": "^3.1.2",
     "shortid": "^2.2.16",
-    "valid-url": "^1.0.9"
+    "valid-url": "^1.0.9",
+    "validator": "^13.7.0"
   }
 }
