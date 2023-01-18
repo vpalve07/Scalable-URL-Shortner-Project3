@@ -1,18 +1,41 @@
 const urlModel = require('../modules/urlModel')
 const shortid = require('shortid')
+const redis = require("redis")
+const { promisify } = require("util")
+
+
+//1. Connect to the redis server
+
+const redisClient = redis.createClient(
+    18345,
+    "redis-18345.c264.ap-south-1-1.ec2.cloud.redislabs.com",
+    { no_ready_check: true }
+);
+redisClient.auth("RXGCwJUfsFLEWSsJIsiiFJCjdJFNGE0m", function (err) {
+    if (err) throw err;
+});
+
+redisClient.on("connect", async function () {
+    console.log("Connected to Redis..");
+});
+
+
+//2. Prepare the functions for each command
+
+const SET_ASYNC = promisify(redisClient.SETEX).bind(redisClient);
+const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
+
+
 
 const url = async function (req, res) {
     try {
         let data = req.body
-        let {longUrl,shortUrl,urlCode} = data
-        if(Object.keys(data).length==0) return res.status(400).send({status:false,msg:"Request Body cant be empty"})
-        // if(Object.keys(data).includes()) return res.status(400).send({status:false,msg:"Request body can only contain 'longUrl','shortUrl','urlCode'"})
-        if(!Object.keys(data).includes('longUrl')) return res.status(400).send({status:false,msg:"'longUrl' should be there in request body"})
-        if(Object.keys(data).length>1) return res.status(400).send({status:false,msg:"Enter 'longUrl' only in request body"})
-        
-        // if(Object.keys(data).includes('shortUrl')) return res.status(400).send({status:false,msg:"shortUrl should not be there in request body"})
-        // if(Object.keys(data).includes('urlCode')) return res.status(400).send({status:false,msg:"urlCode should not be there in request body"})
-        
+        let { longUrl, shortUrl, urlCode } = data
+        if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "Request Body cant be empty" })
+
+        if (!Object.keys(data).includes('longUrl')) return res.status(400).send({ status: false, msg: "'longUrl' should be there in request body" })
+        if (Object.keys(data).length > 1) return res.status(400).send({ status: false, msg: "Enter 'longUrl' only in request body" })
+
         let LinkFormat = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%.\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%\+.~#?&\/=]*)$/
         if (!LinkFormat.test(longUrl)) return res.status(400).send({ status: false, msg: "Please Enter Valid Url" })
         const findUrl = await urlModel.findOne({ longUrl: longUrl }).select({ longUrl: 1, shortUrl: 1, urlCode: 1, _id: 0 })
@@ -32,10 +55,16 @@ const url = async function (req, res) {
 
 const getUrl = async function (req, res) {
     try {
-        let urlCode = req.params.urlCode
-        let getData = await urlModel.findOne({ urlCode: urlCode }).select({ urlCode: 1, shortUrl: 1, longUrl: 1, _id: 0 })
-        if (!getData) return res.status(400).send({ status: false, msg: "Page Not found" })
-        return res.status(302).redirect(getData.longUrl)
+        // let urlCode = req.params.urlCode
+        let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
+        if (cahcedProfileData) {
+            return res.send(cahcedProfileData)
+        } else {
+            let getData = await urlModel.findOne({ urlCode: req.params.urlCode }).select({ urlCode: 1, shortUrl: 1, longUrl: 1, _id: 0 })
+            if (!getData) return res.status(400).send({ status: false, msg: "Page Not found" })
+            await SET_ASYNC(`${req.params.urlCode}`, 10,  JSON.stringify(getData))
+            return res.status(302).redirect(getData.longUrl)
+        }
     } catch (error) {
         return res.send({ errorType: error.name, errorMsg: error.message })
     }
