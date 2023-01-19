@@ -30,12 +30,12 @@ const url = async function (req, res) {
         longUrl = longUrl.trim()
         if (longUrl == "") return res.status(400).send({ status: false, msg: "Enter 'Url' in request body" })
         if (Object.keys(data).length > 1) return res.status(400).send({ status: false, msg: "Enter 'Url' only in request body" })
-        if (!validator.isURL(longUrl)) return res.status(400).send({ status: false, msg: `The URL ${longUrl} is not valid` })
+        if (!validator.isURL(longUrl)) return res.status(400).send({ status: false, msg: `The URL format is not valid` })
 
         const response = await axios.get(longUrl)
             .then(() => longUrl)
             .catch(() => null)
-        if (!response) return res.status(400).send({ status: false, msg: `The URL ${longUrl} is not valid` })
+        if (!response) return res.status(404).send({ status: false, msg: `The URL ${longUrl} is not valid` })
 
 
         let cachedProfileData = await GET_ASYNC(`${data.longUrl}`)
