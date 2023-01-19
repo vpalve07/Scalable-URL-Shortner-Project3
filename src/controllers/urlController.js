@@ -2,6 +2,7 @@ const urlModel = require('../modules/urlModel')
 const shortid = require('shortid')
 const redis = require("redis")
 const axios = require('axios')
+const validator = require('validator')
 const { promisify } = require("util")
 
 
@@ -23,10 +24,12 @@ const url = async function (req, res) {
     try {
         let data = req.body
         let { longUrl } = data
-        if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "Request Body cant be empty" })
 
+        if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "Request Body cant be empty" })
         if (!Object.keys(data).includes('longUrl')) return res.status(400).send({ status: false, msg: "'longUrl' should be there in request body" })
+        if (longUrl == "") return res.status(400).send({ status: false, msg: "Enter 'longUrl' in request body" })
         if (Object.keys(data).length > 1) return res.status(400).send({ status: false, msg: "Enter 'longUrl' only in request body" })
+        if (!validator.isURL(longUrl)) return res.status(400).send({ status: false, msg: `The URL ${longUrl} is not valid` })
 
 
         const response = await axios.get(longUrl)
@@ -44,7 +47,7 @@ const url = async function (req, res) {
         data.shortUrl = baseUrl + shortUrlCode
         let { shortUrl, urlCode } = data
         let createData = await urlModel.create(data)
-        await SET_ASYNC(`${shortUrlCode}`, 50, JSON.stringify(data))
+        await SET_ASYNC(`${shortUrlCode}`, 86400, JSON.stringify(data))
         return res.status(201).send({ status: true, data: { longUrl, shortUrl, urlCode } })
     } catch (error) {
         return res.status(500).send({ errorType: error.name, errorMsg: error.message })
@@ -55,15 +58,13 @@ const url = async function (req, res) {
 const getUrl = async function (req, res) {
     try {
         let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
-        if (cahcedProfileData) {
-            return res.status(302).redirect(JSON.parse(cahcedProfileData).longUrl)
-        }
-        else {
-            let getData = await urlModel.findOne({ urlCode: req.params.urlCode }).select({ urlCode: 1, shortUrl: 1, longUrl: 1, _id: 0 })
-            if (!getData) return res.status(400).send({ status: false, msg: "Page Not found" })
-            await SET_ASYNC(`${req.params.urlCode}`, 50, JSON.stringify(getData))
-            return res.status(302).redirect(getData.longUrl)
-        }
+        if (cahcedProfileData) return res.status(302).redirect(JSON.parse(cahcedProfileData).longUrl)
+        
+        let getData = await urlModel.findOne({ urlCode: req.params.urlCode }).select({ urlCode: 1, shortUrl: 1, longUrl: 1, _id: 0 })
+        if (!getData) return res.status(400).send({ status: false, msg: "Page Not found" })
+        await SET_ASYNC(`${req.params.urlCode}`, 86400, JSON.stringify(getData))
+        return res.status(302).redirect(getData.longUrl)
+
     } catch (error) {
         return res.status(500).send({ errorType: error.name, errorMsg: error.message })
     }
