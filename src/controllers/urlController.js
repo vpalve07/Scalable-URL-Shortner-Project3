@@ -26,11 +26,11 @@ const url = async function (req, res) {
         let { longUrl } = data
 
         if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "Request Body cant be empty" })
-        if (!Object.keys(data).includes('longUrl')) return res.status(400).send({ status: false, msg: "'longUrl' should be there in request body" })
-        if (longUrl == "") return res.status(400).send({ status: false, msg: "Enter 'longUrl' in request body" })
-        if (Object.keys(data).length > 1) return res.status(400).send({ status: false, msg: "Enter 'longUrl' only in request body" })
+        if (!Object.keys(data).includes('longUrl')) return res.status(400).send({ status: false, msg: "'Url' should be there in request body" })
+        longUrl = longUrl.trim()
+        if (longUrl == "") return res.status(400).send({ status: false, msg: "Enter 'Url' in request body" })
+        if (Object.keys(data).length > 1) return res.status(400).send({ status: false, msg: "Enter 'Url' only in request body" })
         if (!validator.isURL(longUrl)) return res.status(400).send({ status: false, msg: `The URL ${longUrl} is not valid` })
-
 
         const response = await axios.get(longUrl)
             .then(() => longUrl)
@@ -38,8 +38,14 @@ const url = async function (req, res) {
         if (!response) return res.status(400).send({ status: false, msg: `The URL ${longUrl} is not valid` })
 
 
+        let cachedProfileData = await GET_ASYNC(`${data.longUrl}`)
+        if (cachedProfileData) return res.status(200).send({ status: true, data: JSON.parse(cachedProfileData) })
+
         const findUrl = await urlModel.findOne({ longUrl: longUrl }).select({ longUrl: 1, shortUrl: 1, urlCode: 1, _id: 0 })
-        if (findUrl) { return res.status(200).send({ status: true, data: { longUrl: findUrl.longUrl, shortUrl: findUrl.shortUrl, urlCode: findUrl.urlCode } }) };
+        if (findUrl) {
+            await SET_ASYNC(`${data.longUrl}`, 86400, JSON.stringify(findUrl))
+            return res.status(200).send({ status: true, data: findUrl })
+        };
 
         let shortUrlCode = shortid.generate()
         let baseUrl = `${req.protocol}://${req.get('host')}/`
@@ -57,9 +63,9 @@ const url = async function (req, res) {
 
 const getUrl = async function (req, res) {
     try {
-        let cahcedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
-        if (cahcedProfileData) return res.status(302).redirect(JSON.parse(cahcedProfileData).longUrl)
-        
+        let cachedProfileData = await GET_ASYNC(`${req.params.urlCode}`)
+        if (cachedProfileData) return res.status(302).redirect(JSON.parse(cachedProfileData).longUrl)
+
         let getData = await urlModel.findOne({ urlCode: req.params.urlCode }).select({ urlCode: 1, shortUrl: 1, longUrl: 1, _id: 0 })
         if (!getData) return res.status(400).send({ status: false, msg: "Page Not found" })
         await SET_ASYNC(`${req.params.urlCode}`, 86400, JSON.stringify(getData))
