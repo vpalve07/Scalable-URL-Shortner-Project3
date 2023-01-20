@@ -54,7 +54,7 @@ const url = async function (req, res) {
         let { shortUrl, urlCode } = data
         let createData = await urlModel.create(data)
         await SET_ASYNC(`${shortUrlCode}`, 86400, JSON.stringify(data))
-        await SET_ASYNC(`${data.longUrl}`, 86400, JSON.stringify(findUrl))
+        await SET_ASYNC(`${data.longUrl}`, 86400, JSON.stringify(data))
         return res.status(201).send({ status: true, data: { longUrl, shortUrl, urlCode } })
     } catch (error) {
         return res.status(500).send({ errorType: error.name, errorMsg: error.message })
