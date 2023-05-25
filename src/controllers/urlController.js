@@ -9,9 +9,7 @@ require('dotenv').config()
 
 //1. Connect to the redis server
 
-const client = redis.createClient({
-    url: process.env.REDIS_URL
-})
+const client = redis.createClient(process.env.REDIS_URL);
 client.on('error', (err) => console.log('Redis Client Error', err))
 console.log("Connected to Redis..")
 
@@ -46,7 +44,7 @@ const url = async function (req, res) {
             await SET_ASYNC(`${data.longUrl}`, 86400, JSON.stringify(findUrl))
             return res.status(200).send({ status: true, data: findUrl })
         };
-        
+
         let shortUrlCode = shortid.generate()
         let baseUrl = process.env.baseurl
         data.urlCode = shortUrlCode
