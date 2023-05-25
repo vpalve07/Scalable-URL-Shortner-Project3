@@ -46,7 +46,7 @@ const url = async function (req, res) {
             await SET_ASYNC(`${data.longUrl}`, 86400, JSON.stringify(findUrl))
             return res.status(200).send({ status: true, data: findUrl })
         };
-
+        
         let shortUrlCode = shortid.generate()
         let baseUrl = process.env.baseurl
         data.urlCode = shortUrlCode
