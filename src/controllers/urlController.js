@@ -4,12 +4,13 @@ const redis = require("redis")
 const axios = require('axios')
 const validator = require('validator')
 const { promisify } = require("util")
+require('dotenv').config()
 
 
 //1. Connect to the redis server
 
 const client = redis.createClient({
-    url: 'redis://default:RXGCwJUfsFLEWSsJIsiiFJCjdJFNGE0m@redis-18345.c264.ap-south-1-1.ec2.cloud.redislabs.com:18345'
+    url: process.env.REDIS_URL
 })
 client.on('error', (err) => console.log('Redis Client Error', err))
 console.log("Connected to Redis..")
@@ -24,11 +25,10 @@ const url = async function (req, res) {
     try {
         let data = req.body
         let { longUrl } = data
-
         if (Object.keys(data).length == 0) return res.status(400).send({ status: false, msg: "Request Body cant be empty" })
         if (!Object.keys(data).includes('longUrl')) return res.status(400).send({ status: false, msg: "'Url' should be there in request body" })
         longUrl = longUrl.trim()
-        if (longUrl == "") return res.status(400).send({ status: false, msg: "Enter 'Url' in request body" })
+        if (longUrl == "") return res.status(400).send({ status: false, msg: "Enter 'Url' First" })
         if (Object.keys(data).length > 1) return res.status(400).send({ status: false, msg: "Enter 'Url' only in request body" })
         if (!validator.isURL(longUrl)) return res.status(400).send({ status: false, msg: `The URL format is not valid` })
 
@@ -48,7 +48,7 @@ const url = async function (req, res) {
         };
 
         let shortUrlCode = shortid.generate()
-        let baseUrl = `${req.protocol}://${req.get('host')}/`
+        let baseUrl = process.env.baseurl
         data.urlCode = shortUrlCode
         data.shortUrl = baseUrl + shortUrlCode
         let { shortUrl, urlCode } = data
